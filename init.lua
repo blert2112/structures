@@ -24,7 +24,6 @@ function structures:add_structure(name, structure)
 		avoid_short = structure.avoid_short,
 		avoid_long = structure.avoid_long
 	})
-	--structure_list.name = structure
 end
 
 function structures:chest_init(pos, formspec, infotext, item_list)
@@ -79,10 +78,13 @@ core.register_on_generated(function(minp, maxp, seed)
 	local t1 = os.clock()
 
 	-- get voxelmanip
+	local gvmt1,gvmt2
+	gvmt1 = os.clock()
 	local vm, emin, emax = core.get_mapgen_object("voxelmanip")
 	local vm_area = VoxelArea:new({MinEdge = emin, MaxEdge = emax})
 	local vm_data = vm:get_data()
 	local ystride = vm_area.ystride
+	gvmt2 = os.clock()
 
 	-- get a random position and a structure
 	local pos = nil
@@ -160,7 +162,9 @@ core.register_on_generated(function(minp, maxp, seed)
 	corners[4] = {x=pos.x, y=pos.y, z=pos.z + lenz-1}
 
 	-- corners to ground
+	local ctgt1,ctgt2
 	do
+		ctgt1 = os.clock()
 		local ground = 0
 		for i = 1,4 do
 			local count = 0
@@ -173,18 +177,26 @@ core.register_on_generated(function(minp, maxp, seed)
 			if count > ground then ground = count end
 		end
 		pos.y = pos.y - ground
+		ctgt2 = os.clock()
 	end
 
+	local pst1,pst2
 	-- place schematic
+	pst1 = os.clock()
 	if core.place_schematic_on_vmanip(vm, pos, structure_list[structure].id, "random", nil, true) == true then
 		--vm:calc_lighting()
 		vm:write_to_map()
 	end
-
+	pst2 = os.clock()
+	
 	print("[structures] pos: "..core.pos_to_string(pos))
 	print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
+	print("-------------------")
+	print("[structures] vm: "..math.ceil((gvmt2 - gvmt1) * 1000).."ms")
 	print("[structures] position: "..math.ceil((post2 - post1) * 1000).."ms")
 	print("[structures] avoid: "..math.ceil((cnnt2 - cnnt1) * 1000).."ms")
+	print("[structures] ground: "..math.ceil((ctgt2 - ctgt1) * 1000).."ms")
+	print("[structures] place: "..math.ceil((pst2 - pst1) * 1000).."ms")
 	print("*******************")
 end)
 
