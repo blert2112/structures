@@ -19,7 +19,7 @@ function structures:add_structure(name, structure)
 		name = name,
 		id = id,
 		size = structure.schematic.size,
-		where_in = structure.where_in,
+		biomes = structure.biomes,
 		offset = structure.offset,
 		avoid_short = structure.avoid_short,
 		avoid_long = structure.avoid_long
@@ -63,7 +63,8 @@ end
 
 local path = core.get_modpath("structures")
 dofile(path.."/nodes.lua")
-dofile(path.."/md_pyramid.lua")
+dofile(path.."/md_desert_pyramid.lua")
+dofile(path.."/md_jungle_pyramid.lua")
 dofile(path.."/md_henge.lua")
 
 local c_air = core.get_content_id("air")
@@ -77,126 +78,188 @@ core.register_on_generated(function(minp, maxp, seed)
 
 	local t1 = os.clock()
 
+
+	-- get a random position
+	local pos_t1,pos_t2
+	pos_t1 = os.clock()
+----
+	local pos = {}
+	local index2d
+	do
+		local hm = core.get_mapgen_object("heightmap")
+		local sidelen = maxp.x - minp.x + 1
+		pos = {
+			x = math.random(minp.x,maxp.x),
+			y = -1,
+			z = math.random(minp.z,maxp.z)
+		}
+		index2d = (pos.z - minp.z) * sidelen + (pos.x - minp.x)
+		pos.y = hm[index2d] + 1
+	end
+	if pos.y < 0 or pos.y < minp.y or pos.y > maxp.y then
+		print("[structures] position out of bounds, returning")
+		print("[structures] pos: "..core.pos_to_string(pos))
+		print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
+		print("*******************")
+		return
+	end
+----
+	pos_t2 = os.clock()
+
+
+	-- get structure
+	local gs_t1,gs_t2
+	gs_t1 = os.clock()
+----
+	local structure = 0
+	local lenx, lenz, height
+	do
+		local bm = core.get_mapgen_object("biomemap")
+		local biome = valc.biome_ids[bm[index2d]]
+		for i = 1, #structure_list do
+			if table.contains(structure_list[i].biomes, biome) then
+				structure = i
+				lenx = structure_list[structure].size.x
+				lenz = structure_list[structure].size.z
+				height = structure_list[structure].size.y
+			end
+		end
+	end
+	if structure == 0 then
+		print("[structures] suitable structure not found, returning")
+		print("[structures] pos: "..core.pos_to_string(pos))
+		print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
+		print("*******************")
+		return
+	end
+----
+	gs_t2 = os.clock()
+
+
 	-- get voxelmanip
-	local gvmt1,gvmt2
-	gvmt1 = os.clock()
+	local gvm_t1,gvm_t2
+	gvm_t1 = os.clock()
+----
 	local vm, emin, emax = core.get_mapgen_object("voxelmanip")
 	local vm_area = VoxelArea:new({MinEdge = emin, MaxEdge = emax})
 	local vm_data = vm:get_data()
-	local ystride = vm_area.ystride
-	gvmt2 = os.clock()
+	local stride = vm_area.ystride
+----
+	gvm_t2 = os.clock()
 
-	-- get a random position and a structure
-	local pos = nil
-	local structure
-	local post1,post2
+
+	-- to ground
+	local tg_t1,tg_t2
+	tg_t1 = os.clock()
+----
 	do
-		post1 = os.clock()
-		local p1 = {
-			x = math.random(minp.x,maxp.x),
-			y = maxp.y,
-			z = math.random(minp.z,maxp.z)
-		}
-		local index = vm_area:index(p1.x, p1.y, p1.z)
-		while vm_data[index] == c_air do
-			index = index - ystride
-		end
-		for i = 1, #structure_list do
-			if vm_data[index] == structure_list[i].where_in then
-				structure = i
-				pos = vm_area:position(index)
-				pos = {
-					x = pos.x + structure_list[i].offset.x,
-					y = pos.y + structure_list[i].offset.y,
-					z = pos.z + structure_list[i].offset.z,
-				}
+		local corner = {x=pos.x + lenx-1, y=pos.y, z=pos.z + lenz-1}
+		local gc
+		for y = pos.y-1, pos.y-1-(math.floor(height/2)),-1 do
+			gc = true
+			for z = pos.z, corner.z do
+				for x = pos.x, corner.x do
+					local index = vm_area:index(x,y,z)
+					if vm_data[index] == c_air then
+						gc = false
+						break
+					end
+				end
+				if gc == false then break end
+			end
+			if gc == true then
+				pos.y = y + 1
 				break
 			end
 		end
-		if pos == nil or pos.y < 0 then return end
-		post2 = os.clock()
+		if gc == false then
+			print("[structures] suitable ground not found, returning")
+			print("[structures] pos: "..core.pos_to_string(pos))
+			print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
+			print("*******************")
+			return
+		end
 	end
+	if pos.y < 0 or pos.y < minp.y or pos.y > maxp.y then
+		print("[structures] position out of bounds, returning")
+		print("[structures] pos: "..core.pos_to_string(pos))
+		print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
+		print("*******************")
+		return
+	end
+----
+	tg_t2 = os.clock()
 
-	local lenx = structure_list[structure].size.x
-	local lenz = structure_list[structure].size.z
-	local height = structure_list[structure].size.y
 
 	-- check nearby nodes
-	local cnnt1,cnnt2
+	local cnn_t1,cnn_t2
+	cnn_t1 = os.clock()
+----
 	do
-		cnnt1 = os.clock()
 		local dist = structure_list[structure].avoid_short.distance
-		for x = emin.x, emax.x do
-			for z = emin.z, emax.z do
+		for z = emin.z, emax.z do
+			for x = emin.x, emax.x do
 				local avoid_short = false
 				if (z >= pos.z-dist) and (z <= pos.z+lenz+dist) and (x >= pos.x-dist) and (x <= pos.x+lenx+dist) then
 					avoid_short = true
 				end
 				local index = vm_area:index(x, pos.y, z)
 				for h = -height, height*2 do
-					local ind = index + (ystride*h)
+					local ind = index + (stride*h)
 					if avoid_short == true then
 						for i = 1, #structure_list[structure].avoid_short.nodes do
 							if vm_data[ind] == structure_list[structure].avoid_short.nodes[i] then
+								print("[structures] avoid SHORT node found, returning")
+								print("[structures] pos: "..core.pos_to_string(pos))
+								print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
+								print("*******************")
 								return
 							end
 						end
 					end
 					for i = 1, #structure_list[structure].avoid_long do
 						if vm_data[ind] == structure_list[structure].avoid_long[i] then
+							print("[structures] avoid LONG node found, returning")
+							print("[structures] pos: "..core.pos_to_string(pos))
+							print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
+							print("*******************")
 							return
 						end
 					end
-					
 				end
 			end
 		end
-		cnnt2 = os.clock()
 	end
+----
+	cnn_t2 = os.clock()
 
-	-- get corners
-	local corners = {}
-	corners[1] = pos
-	corners[2] = {x=pos.x + lenx-1, y=pos.y, z=pos.z}
-	corners[3] = {x=pos.x + lenx-1, y=pos.y, z=pos.z +lenz-1}
-	corners[4] = {x=pos.x, y=pos.y, z=pos.z + lenz-1}
 
-	-- corners to ground
-	local ctgt1,ctgt2
-	do
-		ctgt1 = os.clock()
-		local ground = 0
-		for i = 1,4 do
-			local count = 0
-			local index = vm_area:index(corners[i].x, corners[i].y-1, corners[i].z)
-			while vm_data[index] == c_air do
-				count = count + 1
-				index = index - ystride
-			end
-			if count > height+1 then return end
-			if count > ground then ground = count end
-		end
-		pos.y = pos.y - ground
-		ctgt2 = os.clock()
-	end
-
-	local pst1,pst2
 	-- place schematic
-	pst1 = os.clock()
+	local ps_t1,ps_t2
+	ps_t1 = os.clock()
+----
+	--core.place_schematic(pos, structure_list[structure].id, "random", nil, true)
+
 	if core.place_schematic_on_vmanip(vm, pos, structure_list[structure].id, "random", nil, true) == true then
-		--vm:calc_lighting()
+		vm:calc_lighting()	-- turn this off and things get very fast but lighting can be all funked up
 		vm:write_to_map()
+	else
+		print("[structures] structure did not fit in chunk")
 	end
-	pst2 = os.clock()
-	
+----
+
+
+	ps_t2 = os.clock()
+
 	print("[structures] pos: "..core.pos_to_string(pos))
 	print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
 	print("-------------------")
-	print("[structures] vm: "..math.ceil((gvmt2 - gvmt1) * 1000).."ms")
-	print("[structures] position: "..math.ceil((post2 - post1) * 1000).."ms")
-	print("[structures] avoid: "..math.ceil((cnnt2 - cnnt1) * 1000).."ms")
-	print("[structures] ground: "..math.ceil((ctgt2 - ctgt1) * 1000).."ms")
-	print("[structures] place: "..math.ceil((pst2 - pst1) * 1000).."ms")
+	print("[structures] position: "..math.ceil((pos_t2 - pos_t1) * 1000).."ms")
+	print("[structures] structure: "..math.ceil((gs_t2 - gs_t1) * 1000).."ms")
+	print("[structures] vm: "..math.ceil((gvm_t2 - gvm_t1) * 1000).."ms")
+	print("[structures] ground: "..math.ceil((tg_t2 - tg_t1) * 1000).."ms")
+	print("[structures] avoid: "..math.ceil((cnn_t2 - cnn_t1) * 1000).."ms")
+	print("[structures] place: "..math.ceil((ps_t2 - ps_t1) * 1000).."ms")
 	print("*******************")
 end)
 
@@ -206,6 +269,6 @@ core.register_chatcommand("pp", {
 	func = function(name, param)
 		local player = core.get_player_by_name(name)
 		local pos = player:getpos()
-		core.place_schematic(pos, structure_list[1].id, "random", nil, true)
+		core.place_schematic(pos, structure_list[2].id, "random", nil, true)
 	end
 })

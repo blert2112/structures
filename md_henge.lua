@@ -11,20 +11,12 @@ local l = {name="default:stone"}
 local m = {name="stairs:slab_stone"}
 
 local avoid_short_nodes = {
-	core.get_content_id("default:tree"),
-	core.get_content_id("default:jungletree"),
-	core.get_content_id("default:pine_tree"),
 	core.get_content_id("default:water_source"),
 	core.get_content_id("default:water_flowing"),
 	core.get_content_id("default:river_water_source"),
 	core.get_content_id("default:river_water_flowing")
 }
 if core.get_modpath("valleys_c") then
-	avoid_short_nodes[#avoid_short_nodes+1] = core.get_content_id("valleys_c:birch_tree")
-	avoid_short_nodes[#avoid_short_nodes+1] = core.get_content_id("valleys_c:fir_tree")
-	avoid_short_nodes[#avoid_short_nodes+1] = core.get_content_id("valleys_c:banana_tree")
-	avoid_short_nodes[#avoid_short_nodes+1] = core.get_content_id("valleys_c:cherry_blossom_tree")
-	avoid_short_nodes[#avoid_short_nodes+1] = core.get_content_id("valleys_c:fern_trunk_big")
 	avoid_short_nodes[#avoid_short_nodes+1] = core.get_content_id("valleys_c:water_source")
 	avoid_short_nodes[#avoid_short_nodes+1] = core.get_content_id("valleys_c:water_flowing")
 	avoid_short_nodes[#avoid_short_nodes+1] = core.get_content_id("valleys_c:river_water_source")
@@ -46,13 +38,13 @@ local chest_items = {
 
 -- structure definition
 structures:add_structure("md_henge", {
-	where_in = core.get_content_id("default:dirt_with_grass"),
+	biomes = {"stone_grassland"},
 	avoid_short = {
 		distance = 5,
 		nodes = avoid_short_nodes
 	},
 	avoid_long = avoid_long_nodes,
-	offset = {x=0, y=0, z=0},
+	offset = {x=0, y=-1, z=0},
 	schematic = {
 		size = {x=31, y=11, z=31},
 		data = {

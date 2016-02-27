@@ -1,5 +1,5 @@
 
--- medium pyramid
+-- medium desert pyramid
 
 -- structure setup
 local i = {name="ignore"}
@@ -19,7 +19,6 @@ local l = {name="stairs:slab_desert_stone"}
 local m = {name="default:goldblock"}
 
 local avoid_short_nodes = {
-	core.get_content_id("default:dirt_with_grass"),
 	core.get_content_id("default:water_source"),
 	core.get_content_id("default:water_flowing"),
 	core.get_content_id("default:river_water_source"),
@@ -33,10 +32,7 @@ if core.get_modpath("valleys_c") then
 end
 
 local avoid_long_nodes = {
-	core.get_content_id("default:sandstone"),
-	core.get_content_id("stairs:slab_desert_stone"),
-	core.get_content_id("default:sandstonebrick"),
-	core.get_content_id("stairs:stair_desert_stone")
+	core.get_content_id("default:sandstone")
 }
 
 local chest_items = {
@@ -49,8 +45,8 @@ local chest_items = {
 }
 
 -- structure definition
-structures:add_structure("md_pyramid", {
-	where_in = core.get_content_id("default:desert_sand"),
+structures:add_structure("md_desert_pyramid", {
+	biomes = {"desert"},
 	avoid_short = {
 		distance = 20,
 		nodes = avoid_short_nodes
