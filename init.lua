@@ -1,15 +1,47 @@
 
 --[[
-	md_pryamid test
 	mapseed = "pyrtest"
 	desert at: 508 24 787
 ]]
 
+-- check for valleys_c mod and create or localize needed funtions/tables
+local table_contains, biome_ids
+if core.get_modpath("valleys_c") then
+	table_contains = table.contains
+	biome_ids = valc.biome_ids
+else
+	if not core.get_biome_id then
+		core.log()
+		core.log("* Not loading Structures *")
+		core.log("Requires functions which are not")
+		core.log(" exposed by your Minetest build.")
+		core.log()
+		return
+	end
+
+	table_contains = function(table, element)
+		for key, value in pairs(table) do
+			if value == element then
+				if key then
+					return key
+				else
+					return true
+				end
+			end
+		end
+		return false
+	end
+
+	biome_ids = {}
+	for name, desc in pairs(core.registered_biomes) do
+		local n = core.get_biome_id(desc.name)
+		biome_ids[n] = desc.name
+	end
+end
+
+
 structures = {}
-
 local structure_list = {}
-
-
 --[[		EXTERNAL FUNCTIONS		]]
 
 -- add new structure(s) to list
@@ -57,7 +89,6 @@ function structures:chest_init(pos, formspec, infotext, item_list)
 		end
 	end
 end
-
 --[[		END EXTERNAL FUNCTIONS		]]
 
 
@@ -115,9 +146,9 @@ core.register_on_generated(function(minp, maxp, seed)
 	local lenx, lenz, height
 	do
 		local bm = core.get_mapgen_object("biomemap")
-		local biome = valc.biome_ids[bm[index2d]]
+		local biome = biome_ids[bm[index2d]]
 		for i = 1, #structure_list do
-			if table.contains(structure_list[i].biomes, biome) then
+			if table_contains(structure_list[i].biomes, biome) then
 				structure = i
 				lenx = structure_list[structure].size.x
 				lenz = structure_list[structure].size.z
