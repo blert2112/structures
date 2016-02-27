@@ -10,6 +10,7 @@ if core.get_modpath("valleys_c") then
 	table_contains = table.contains
 	biome_ids = valc.biome_ids
 else
+	-- the following bits were borrowed from the valleys_c mod
 	if not core.get_biome_id then
 		core.log()
 		core.log("* Not loading Structures *")
