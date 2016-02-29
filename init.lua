@@ -98,6 +98,7 @@ dofile(path.."/nodes.lua")
 dofile(path.."/md_desert_pyramid.lua")
 dofile(path.."/md_jungle_pyramid.lua")
 dofile(path.."/md_henge.lua")
+dofile(path.."/sm_shipwreck.lua")
 
 local c_air = core.get_content_id("air")
 
@@ -128,7 +129,7 @@ core.register_on_generated(function(minp, maxp, seed)
 		index2d = (pos.z - minp.z) * sidelen + (pos.x - minp.x)
 		pos.y = hm[index2d] + 1
 	end
-	if pos.y < 0 or pos.y < minp.y or pos.y > maxp.y then
+	if pos.y < minp.y or pos.y > maxp.y then
 		print("[structures] position out of bounds, returning")
 		print("[structures] pos: "..core.pos_to_string(pos))
 		print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
@@ -212,7 +213,7 @@ core.register_on_generated(function(minp, maxp, seed)
 			return
 		end
 	end
-	if pos.y < 0 or pos.y < minp.y or pos.y > maxp.y then
+	if pos.y < minp.y or pos.y > maxp.y then
 		print("[structures] position out of bounds, returning")
 		print("[structures] pos: "..core.pos_to_string(pos))
 		print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
@@ -228,34 +229,38 @@ core.register_on_generated(function(minp, maxp, seed)
 	cnn_t1 = os.clock()
 ----
 	do
-		local dist = structure_list[structure].avoid_short.distance
-		for z = emin.z, emax.z do
-			for x = emin.x, emax.x do
-				local avoid_short = false
-				if (z >= pos.z-dist) and (z <= pos.z+lenz+dist) and (x >= pos.x-dist) and (x <= pos.x+lenx+dist) then
-					avoid_short = true
-				end
-				local index = vm_area:index(x, pos.y, z)
-				for h = -height, height*2 do
-					local ind = index + (stride*h)
-					if avoid_short == true then
-						for i = 1, #structure_list[structure].avoid_short.nodes do
-							if vm_data[ind] == structure_list[structure].avoid_short.nodes[i] then
-								print("[structures] avoid SHORT node found, returning")
-								print("[structures] pos: "..core.pos_to_string(pos))
-								print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
-								print("*******************")
-								return
+		if structure_list[structure].avoid_short or structure_list[structure].avoid_long then
+			local dist = structure_list[structure].avoid_short.distance
+			for z = emin.z, emax.z do
+				for x = emin.x, emax.x do
+					local avoid_short = false
+					if (z >= pos.z-dist) and (z <= pos.z+lenz+dist) and (x >= pos.x-dist) and (x <= pos.x+lenx+dist) and structure_list[structure].avoid_short then
+						avoid_short = true
+					end
+					local index = vm_area:index(x, pos.y, z)
+					for h = -height, height*2 do
+						local ind = index + (stride*h)
+						if avoid_short == true then
+							for i = 1, #structure_list[structure].avoid_short.nodes do
+								if vm_data[ind] == structure_list[structure].avoid_short.nodes[i] then
+									print("[structures] avoid SHORT node found, returning")
+									print("[structures] pos: "..core.pos_to_string(pos))
+									print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
+									print("*******************")
+									return
+								end
 							end
 						end
-					end
-					for i = 1, #structure_list[structure].avoid_long do
-						if vm_data[ind] == structure_list[structure].avoid_long[i] then
-							print("[structures] avoid LONG node found, returning")
-							print("[structures] pos: "..core.pos_to_string(pos))
-							print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
-							print("*******************")
-							return
+						if structure_list[structure].avoid_long then
+							for i = 1, #structure_list[structure].avoid_long do
+								if vm_data[ind] == structure_list[structure].avoid_long[i] then
+									print("[structures] avoid LONG node found, returning")
+									print("[structures] pos: "..core.pos_to_string(pos))
+									print("[structures] chunk: "..math.ceil((os.clock() - t1) * 1000).."ms")
+									print("*******************")
+									return
+								end
+							end
 						end
 					end
 				end
@@ -301,6 +306,6 @@ core.register_chatcommand("pp", {
 	func = function(name, param)
 		local player = core.get_player_by_name(name)
 		local pos = player:getpos()
-		core.place_schematic(pos, structure_list[2].id, "random", nil, true)
+		core.place_schematic(pos, structure_list[4].id, "random", nil, true)
 	end
 })
