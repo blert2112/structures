@@ -13,13 +13,15 @@ local l = {name="default:junglewood"}
 local m = {name="default:wood"}
 local n = {name="default:chest"}
 
+local avoid_long_nodes = {
+	core.get_content_id("default:wood"),
+	core.get_content_id("default:junglewood")
+}
+
 local chest_items = {
-	{name="default:apple", max = 3},
-	{name="farming:bread", max = 3},
 	{name="default:steel_ingot", max = 2},
 	{name="default:gold_ingot", max = 2},
-	{name="default:diamond", max = 1},
-	{name="default:pick_steel", max = 1}
+	{name="default:diamond", max = 1}
 }
 
 -- structure definition
@@ -27,7 +29,7 @@ structures:add_structure("sm_shipwreck", {
 	biomes = {"glacier_ocean", "tundra_ocean", "taiga_ocean", "sandstone_grassland_ocean", "stone_grassland_ocean",
 		"coniferous_forest_ocean", "deciduous_forest_ocean", "desert_ocean", "savanna_ocean", "rainforest_ocean"},
 	avoid_short = nil,
-	avoid_long = nil,
+	avoid_long = avoid_long_nodes,
 	offset = {x=0, y=-2, z=0},
 	schematic = {
 		size = {x=15, y=10, z=7},
