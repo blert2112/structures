@@ -51,7 +51,7 @@ local chest_items = {
 
 -- structure definition
 structures:add_structure("md_jungle_pyramid", {
-	biomes = {"jungle", "rainforest"},
+	biomes = {"rainforest"},
 	avoid_short = {
 		distance = 20,
 		nodes = avoid_short_nodes
@@ -330,16 +330,16 @@ core.register_abm({
 			local p = {x=pos.x, y=pos.y+2, z=pos.z}
 			p.x = pos.x + 3
 			p.z = pos.z + 3
-			structures:chest_init(p, nil, "Ancient Chest", chest_items)
+			structures:chest_init(p, nil, "Ancient Chest", chest_items, 3)
 			p.x = pos.x + 3
 			p.z = pos.z - 3
-			structures:chest_init(p, nil, "Ancient Chest", chest_items)
+			structures:chest_init(p, nil, "Ancient Chest", chest_items, 3)
 			p.x = pos.x - 3
 			p.z = pos.z + 3
-			structures:chest_init(p, nil, "Ancient Chest", chest_items)
+			structures:chest_init(p, nil, "Ancient Chest", chest_items, 3)
 			p.x = pos.x - 3
 			p.z = pos.z - 3
-			structures:chest_init(p, nil, "Ancient Chest", chest_items)
+			structures:chest_init(p, nil, "Ancient Chest", chest_items, 3)
 		end
 	end
 })
